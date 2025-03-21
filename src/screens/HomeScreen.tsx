@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { checkIn, checkOut } from '../services/api'; // Import your API functions
 import { useUser } from '../hooks/useUser';
@@ -29,10 +30,16 @@ const HomeScreen: React.FC = () => {
     const handleCheckInOut = async (action: 'checkin' | 'checkout') => {
         if (!location) return;
 
+        if (!user) {
+            setStatus("User information is missing.");
+            return;
+        }
+
         try {
+            console.log(user.emp_id);
             const response = action === 'checkin' 
-                ? await checkIn(location.coords.latitude, location.coords.longitude)
-                : await checkOut(location.coords.latitude, location.coords.longitude);
+                ? await checkIn(location.coords.latitude, location.coords.longitude, user.emp_id)
+                : await checkOut(location.coords.latitude, location.coords.longitude, user.emp_id);
 
             setStatus(response.data.message);
             
@@ -42,7 +49,7 @@ const HomeScreen: React.FC = () => {
                 updateElapsedTime(now);
             } else {
                 setCheckInTime(null);
-                setElapsedTime("");
+                // setElapsedTime("");
             }
         } catch (error: any) {
             setStatus(error.response?.data?.message || "An error occurred during check-in/out");
@@ -83,32 +90,42 @@ const HomeScreen: React.FC = () => {
 
     if (!location) {
         return (
-            <View style={styles.container}>
+            <SafeAreaView style={styles.container}>
                 <ActivityIndicator size="large" color="#0000ff" />
-            </View>
+            </SafeAreaView>
         );
     }
 
     return (
         <View style={styles.container}>
             <View style={styles.mapContainer}>
-                <MapView
-                    style={styles.map}
-                    initialRegion={{
-                        latitude: location.coords.latitude,
-                        longitude: location.coords.longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                    }}
-                >
-                    <Marker
-                        coordinate={{
+                {location && (
+                    <MapView
+                        key={location.coords.latitude + location.coords.longitude} // Unique key to force re-render
+                        provider="google"
+                        style={styles.map}
+                        userInterfaceStyle='dark'
+                        showsPointsOfInterest={false}
+                        showsBuildings={false}
+                        zoomEnabled={false}
+                        rotateEnabled={false}
+                        zoomTapEnabled={false}
+                        initialRegion={{
                             latitude: location.coords.latitude,
                             longitude: location.coords.longitude,
+                            latitudeDelta: 0.005,
+                            longitudeDelta: 0.005,
                         }}
-                        title="You are here"
-                    />
-                </MapView>
+                    >
+                        <Marker
+                            coordinate={{
+                                latitude: location.coords.latitude,
+                                longitude: location.coords.longitude,
+                            }}
+                            title="You are here"
+                        />
+                    </MapView>
+                )}
             </View>
             
             {/* Check-in/out Component */}
@@ -142,9 +159,9 @@ const HomeScreen: React.FC = () => {
                         Checked in at: {formatTime(checkInTime)}
                     </Text>
                 )}
-                {user && (
+                {/* {user && (
                     <Text style={styles.text}>Logged in as: {user.email}</Text>
-                )}
+                )} */}
             </View>
         </View>
     );

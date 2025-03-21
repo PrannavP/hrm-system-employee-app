@@ -13,10 +13,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }: Props) => {
     const { setToken } = useUser();
 
     const handleLogin = async() => {
-        console.log('clicked')
         try{
-            console.log(email);
-            console.log(password);
             const response = await login(email, password);
             // console.log(response);
             if(response.status === 200){
