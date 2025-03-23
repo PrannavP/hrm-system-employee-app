@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'rea
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
-import { checkIn, checkOut } from '../services/api'; // Import your API functions
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { checkIn, checkOut } from '../services/api';
 import { useUser } from '../hooks/useUser';
 
 const HomeScreen: React.FC = () => {
@@ -11,7 +12,7 @@ const HomeScreen: React.FC = () => {
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [status, setStatus] = useState<string>("");
     const [checkInTime, setCheckInTime] = useState<Date | null>(null);
-    const [elapsedTime, setElapsedTime] = useState<string>("");
+    const [elapsedTime, setElapsedTime] = useState<string>("00:00:00");
     const { user } = useUser();
 
     useEffect(() => {
@@ -24,6 +25,14 @@ const HomeScreen: React.FC = () => {
 
             let currentLocation = await Location.getCurrentPositionAsync({});
             setLocation(currentLocation);
+
+            // Retrieve check-in time from AsyncStorage
+            const storedCheckInTime = await AsyncStorage.getItem('checkInTime');
+            if (storedCheckInTime) {
+                const parsedCheckInTime = new Date(storedCheckInTime);
+                setCheckInTime(parsedCheckInTime);
+                updateElapsedTime(parsedCheckInTime);
+            }
         })();
     }, []);
 
@@ -46,10 +55,12 @@ const HomeScreen: React.FC = () => {
             if (action === 'checkin') {
                 const now = new Date();
                 setCheckInTime(now);
+                await AsyncStorage.setItem('checkInTime', now.toISOString());
                 updateElapsedTime(now);
             } else {
                 setCheckInTime(null);
-                // setElapsedTime("");
+                await AsyncStorage.removeItem('checkInTime');
+                setElapsedTime("00:00:00");
             }
         } catch (error: any) {
             setStatus(error.response?.data?.message || "An error occurred during check-in/out");
@@ -131,11 +142,7 @@ const HomeScreen: React.FC = () => {
             {/* Check-in/out Component */}
             <View style={styles.checkInOutContainer}>
                 <Text style={styles.sectionTitle}>Check-in & Check-out</Text>
-                {elapsedTime ? (
-                    <Text style={styles.timerText}>{elapsedTime}</Text>
-                ) : (
-                    <Text style={styles.timerText}>00:00:00</Text>
-                )}
+                <Text style={styles.timerText}>{elapsedTime}</Text>
                 
                 {!checkInTime ? (
                     <TouchableOpacity
@@ -159,15 +166,11 @@ const HomeScreen: React.FC = () => {
                         Checked in at: {formatTime(checkInTime)}
                     </Text>
                 )}
-                {/* {user && (
-                    <Text style={styles.text}>Logged in as: {user.email}</Text>
-                )} */}
             </View>
         </View>
     );
 };
 
-// Keep the same styles as previous answer
 const styles = StyleSheet.create({
     container: {
         flex: 1,
