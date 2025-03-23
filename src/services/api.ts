@@ -44,3 +44,8 @@ export const fetchLeaveRequests = async(emp_table_id: string) => {
 export const fetchEmployeeProfile = async(emp_table_id: number) => {
     return axios.post(`${API_URL}/get-employee`, { emp_table_id });
 };
+
+// employee password reset request endpoint
+export const requestPasswordReset = async(full_name: string, department: string, role: string, message: string) => {
+    return axios.post(`${API_URL}/reset-password-request`, { full_name, department, role, message });
+};

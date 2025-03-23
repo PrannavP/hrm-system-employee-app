@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
+import { requestPasswordReset } from '../services/api';
+
 
 type Props = StackScreenProps<RootStackParamList, 'ForgotPassword'>;
 
@@ -11,9 +13,24 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }: Props) => {
     const [role, setRole] = useState('');
     const [message, setMessage] = useState('');
 
-    const handleForgotPassword = () => {
+    const handleForgotPassword = async() => {
         // Handle forgot password logic here
         console.log('Forgot Password:', { fullName, department, role, message });
+
+        // api call
+        try{
+            const response = await requestPasswordReset(fullName, department, role, message);
+            console.log(response.data.message);
+            Alert.alert("Success", response.data.message);
+
+            // clear the input fields
+            setFullName("");
+            setDepartment("");
+            setRole("");
+            setMessage("");
+        }catch(error){
+            Alert.alert("Something went wrong!", String(error))
+        }
     };
 
     return (
