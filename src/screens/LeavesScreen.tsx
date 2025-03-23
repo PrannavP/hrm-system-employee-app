@@ -31,7 +31,7 @@ const LeavesScreen = () => {
             {/* Tab Content */}
             <View style={styles.contentContainer}>
                 {activeTab === "leaves" ? (
-                    <LeavesTab leavesData={[]} />
+                    <LeavesTab />
                 ) : (
                     <AskLeavesTab />
                 )}

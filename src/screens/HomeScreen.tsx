@@ -33,6 +33,7 @@ const HomeScreen: React.FC = () => {
                 setCheckInTime(parsedCheckInTime);
                 updateElapsedTime(parsedCheckInTime);
             }
+            console.log(user);
         })();
     }, []);
 

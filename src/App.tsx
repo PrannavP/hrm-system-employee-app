@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from './screens/LoginScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList, BottomTabParamList } from './types';
 import BottomTabNavigator from './navigation/BottomTabNavigator';
@@ -18,6 +19,7 @@ export default function App() {
             <NavigationContainer>
                 <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
                     <Stack.Screen name="Login" component={LoginScreen} />
+                    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
                     <Stack.Screen name="MainTabs" component={BottomTabNavigator} options={{ headerShown: false }} />
                 </Stack.Navigator>
                 <StatusBar style="auto" />

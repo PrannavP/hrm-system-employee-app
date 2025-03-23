@@ -4,6 +4,7 @@ import { createContext, useState, useContext, ReactNode } from "react";
 interface User{
     emp_id: string;
     email: string;
+    id: number,
     exp: number;
 }
 

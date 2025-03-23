@@ -3,12 +3,17 @@ import { View, Text, TextInput, Button, TouchableWithoutFeedback, Keyboard, Scro
 import { Calendar } from "react-native-calendars";
 import { Picker } from "@react-native-picker/picker";
 import moment from "moment";
+import { leaveRequest } from "../../services/api";
+import { useUser } from "../../hooks/useUser";
+import Modal from "react-native-modal";
 
 const AskLeavesTab = () => {
-    const [leaveType, setLeaveType] = useState<string>("Sick Leave");
+    const [leaveType, setLeaveType] = useState<"Sick" | "Annual" | "Casual">("Sick");
     const [startDate, setStartDate] = useState<string | null>(null);
     const [endDate, setEndDate] = useState<string | null>(null);
     const [reason, setReason] = useState<string>("");
+    const [isModalVisible, setModalVisible] = useState<boolean>(false);
+    const { user } = useUser();
 
     const currentDate = moment().format("YYYY-MM-DD");
 
@@ -45,8 +50,8 @@ const AskLeavesTab = () => {
         return markedDates;
     };
 
-    const handleSubmit = () => {
-        if (!startDate || !reason) {
+    const handleSubmit = async () => {
+        if (!startDate || !reason || !user) {
             alert("Please fill in all fields.");
             return;
         }
@@ -58,14 +63,22 @@ const AskLeavesTab = () => {
         console.log("End Date:", endDate || startDate);
         console.log("Reason:", reason);
 
-        // Handle submission logic here (e.g., send data to the server)
-        alert(`Leave Request Submitted from ${startDate} to ${endDate || startDate}`);
+        // Save the requests in the database
+        try {
+            await leaveRequest(leaveType, startDate, endDate || startDate, user.id.toString(), reason);
 
-        // Clear the input fields and reset the calendar
-        setLeaveType("Sick Leave");
-        setStartDate(null);
-        setEndDate(null);
-        setReason("");
+            // Show the modal
+            setModalVisible(true);
+
+            // Clear the input fields and reset the calendar
+            setLeaveType("Sick");
+            setStartDate(null);
+            setEndDate(null);
+            setReason("");
+        } catch (error) {
+            console.error("Error submitting leave request", error);
+            alert("An error occurred while submitting the leave request.");
+        }
     };
 
     return (
@@ -82,9 +95,9 @@ const AskLeavesTab = () => {
                         style={styles.picker}
                         onValueChange={(itemValue) => setLeaveType(itemValue)}
                     >
-                        <Picker.Item label="Sick Leave" value="Sick Leave" />
-                        <Picker.Item label="Annual Leave" value="Annual Leave" />
-                        <Picker.Item label="Casual Leave" value="Casual Leave" />
+                        <Picker.Item label="Sick Leave" value="Sick" />
+                        <Picker.Item label="Annual Leave" value="Annual" />
+                        <Picker.Item label="Casual Leave" value="Casual" />
                     </Picker>
                 </View>
 
@@ -110,6 +123,14 @@ const AskLeavesTab = () => {
 
                 {/* Submit Button */}
                 <Button title="Submit Leave Request" onPress={handleSubmit} />
+
+                {/* Modal */}
+                <Modal isVisible={isModalVisible}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalText}>Leave Request Submitted from {startDate} to {endDate || startDate}</Text>
+                        <Button title="Close" onPress={() => setModalVisible(false)} />
+                    </View>
+                </Modal>
             </ScrollView>
         </TouchableWithoutFeedback>
     );
@@ -152,6 +173,18 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         padding: 10,
         marginBottom: 20,
+    },
+    modalContent: {
+        backgroundColor: "white",
+        padding: 22,
+        justifyContent: "center",
+        alignItems: "center",
+        borderRadius: 4,
+        borderColor: "rgba(0, 0, 0, 0.1)",
+    },
+    modalText: {
+        fontSize: 18,
+        marginBottom: 12,
     },
 });
 

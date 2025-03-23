@@ -1,24 +1,43 @@
-import React from "react";
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import { fetchLeaveRequests } from "../../services/api";
+import { useUser } from "../../hooks/useUser";
 
 type Leave = {
     id: string;
-    type: string;
-    date: string;
+    leave_type: string;
+    starting_date: string;
+    ending_date: string;
     status: "Approved" | "Pending" | "Rejected";
-    description: string;
+    reason: string;
 };
 
-type LeavesTabProps = {
-    leavesData: Leave[];
-};
+const LeavesTab: React.FC = () => {
+    const [leavesData, setLeavesData] = useState<Leave[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [status, setStatus] = useState<string>("");
+    const { user } = useUser();
 
-const LeavesTab: React.FC<LeavesTabProps> = () => {
-    const leavesData: Leave[] = [
-        { id: "1", type: "Sick Leave", date: "Mar 20, 2025", status: "Approved", description: "Fever recovery" },
-        { id: "2", type: "Annual Leave", date: "Apr 05, 2025", status: "Pending", description: "Family vacation" },
-        { id: "3", type: "Casual Leave", date: "Mar 25, 2025", status: "Rejected", description: "Personal work" },
-    ];
+    useEffect(() => {
+        const getLeaveRequests = async () => {
+            if (!user) {
+                setStatus("User information is missing.");
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const response = await fetchLeaveRequests(user.id.toString());
+                setLeavesData(response.data.fetchEmployeeLeaves);
+            } catch (error) {
+                console.error("Error fetching leave requests:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        getLeaveRequests();
+    }, [user]);
 
     const getStatusStyle = (status: string) => {
         switch (status) {
@@ -33,18 +52,26 @@ const LeavesTab: React.FC<LeavesTabProps> = () => {
         }
     };
 
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#0000ff" />
+            </View>
+        );
+    }
+
     return (
         <FlatList
             data={leavesData}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
-                        <Text style={styles.cardType}>{item.type}</Text>
+                        <Text style={styles.cardType}>{item.leave_type} Leave</Text>
                         <Text style={[styles.statusBadge, getStatusStyle(item.status)]}>{item.status}</Text>
                     </View>
-                    <Text style={styles.cardDate}>{item.date}</Text>
-                    <Text style={styles.cardDesc}>{item.description}</Text>
+                    <Text style={styles.cardDate}>{new Date(item.starting_date).toLocaleDateString()} - {new Date(item.ending_date).toLocaleDateString()}</Text>
+                    <Text style={styles.cardDesc}>{item.reason}</Text>
                 </View>
             )}
         />
@@ -52,6 +79,11 @@ const LeavesTab: React.FC<LeavesTabProps> = () => {
 };
 
 const styles = StyleSheet.create({
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
     card: {
         width: "100%",
         backgroundColor: "#fff",
@@ -67,7 +99,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 5,
+        marginBottom: 10, // Add spacing between header and dates
     },
     cardType: {
         fontSize: 16,
@@ -84,7 +116,7 @@ const styles = StyleSheet.create({
     cardDate: {
         fontSize: 14,
         color: "#555",
-        marginBottom: 5,
+        marginBottom: 10, // Add spacing between dates and reason
     },
     cardDesc: {
         fontSize: 12,
